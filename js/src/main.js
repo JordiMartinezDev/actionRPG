@@ -1,11 +1,27 @@
 // ----------------------- GLOBAL CONST -------------------
-const initialBgXpos = -400;
-const initialBgYpos = -1200;
+const offsetXpos = 0;
+const offsetYpos = 0;
+const aspectRatioGlobal = 30; // Aspect ratio modified origianl
 let speed = 1;
 let blinkSpeed = 5;
 let lastKey = "w";
+const collisionsMap = [];
+const boundariesArray = [];
 
 // ----------------------- CLASSES -------------------
+class Boundary {
+  constructor(x, y) {
+    this.aspectRatio = aspectRatioGlobal; // size of each tile
+    this.x = x;
+    this.y = y;
+    this.width = this.aspectRatio;
+    this.height = this.aspectRatio;
+  }
+  draw(ctx) {
+    ctx.fillStyle = "red";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
 class Sprite {
   constructor(x, y, image) {
     this.x = x;
@@ -27,6 +43,28 @@ class MainChar {
   baseAttack() {}
   blink(distance) {}
 }
+
+// ----------------------- COLLISIONS -------------------
+
+//collisions is an array declared at collisions.js . Created thanks to Tiled map tool
+//100 tiles of width, so we create an array of 100 tiles per row
+
+for (i = 0; i < collisions.length; i += 100) {
+  collisionsMap.push(collisions.slice(i, 100 + i));
+}
+collisionsMap.forEach((collisionsRow, k) => {
+  collisionsRow.forEach((collisionBlock, j) => {
+    if (collisionBlock === 1025) {
+      boundariesArray.push(
+        new Boundary(
+          j * aspectRatioGlobal + offsetXpos,
+          k * aspectRatioGlobal + offsetYpos
+        )
+      );
+      console.log("Peta?");
+    }
+  });
+});
 // ----------------------- EVENTS -------------------
 
 const keys = {
@@ -124,12 +162,15 @@ window.onload = () => {
 
   backgroundImage.src = "Tiles/finalMapTile.png";
   playerImage.src = "img/character/playerIdle.png";
-  const background = new Sprite(initialBgXpos, initialBgYpos, backgroundImage);
+  const background = new Sprite(offsetXpos, offsetYpos, backgroundImage);
 
   function animationLoop() {
     window.requestAnimationFrame(animationLoop);
 
     background.draw(ctx);
+    boundariesArray.forEach((boundary) => {
+      boundary.draw(ctx);
+    });
 
     // ctx.drawImage(backgroundImage, -400, -1200); //-350, -250
 
@@ -141,8 +182,8 @@ window.onload = () => {
       playerImage.height,
       myCanvas.width / 2 - playerImage.width / 12,
       myCanvas.height / 2 - playerImage.height / 2,
-      playerImage.width / 6,
-      playerImage.height
+      (playerImage.width / 6) * 2,
+      playerImage.height * 2
     );
     // ----------------------- CHARACTER MOVEMENT -------------------
     if (keys.w.pressed == true) background.y += speed;
@@ -173,7 +214,7 @@ window.onload = () => {
           break;
       }
     }
-    //console.log("Char/BG Pos : (" + background.y + "," + background.x + ")");
+    console.log("Char/BG Pos : (" + background.y + "," + background.x + ")");
   }
 
   animationLoop();
