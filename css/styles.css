@@ -4,3 +4,6 @@ canvas {
   #mainCanvas{
     width: 100%;
   }
+  body{
+    background-color: black;
+  }
