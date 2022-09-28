@@ -1,12 +1,14 @@
 // ----------------------- GLOBAL CONST -------------------
-const offsetXpos = 0;
-const offsetYpos = 0;
+const offsetXpos = -600;
+const offsetYpos = -3200;
 const aspectRatioGlobal = 30; // Aspect ratio modified origianl
-let speed = 1;
+let speed = 3;
 let blinkSpeed = 5;
 let lastKey = "w";
 const collisionsMap = [];
 const boundariesArray = [];
+
+let moving = true;
 
 // ----------------------- CLASSES -------------------
 class Boundary {
@@ -18,30 +20,47 @@ class Boundary {
     this.height = this.aspectRatio;
   }
   draw(ctx) {
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "rgba(255,50,0,0.5)"; // color&opacity of boundaries if drawn
+
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
 }
 class Sprite {
-  constructor(x, y, image) {
+  constructor(x, y, image, frames) {
     this.x = x;
     this.y = y;
     this.image = image;
     this.ctx;
+    this.frames = frames; // max different sprites in case there is an animation
+    this.elapsed = 0;
+    this.frameLoop = 0; // initial sprite
+    this.image.onload = () => {
+      this.width = this.image.width / this.frames;
+      this.height = this.image.height;
+    };
   }
   draw(ctx) {
-    ctx.drawImage(this.image, this.x, this.y);
+    if (this.frames == 1) ctx.drawImage(this.image, this.x, this.y);
+    else {
+      ctx.drawImage(
+        this.image,
+        this.frameLoop * this.width,
+        0,
+        this.image.width / this.frames,
+        this.image.height,
+        this.x,
+        this.y,
+        (this.image.width / this.frames) * 2,
+        this.image.height * 2
+      );
+      //console.log(this.frameLoop);
+      if (this.frames > 1) this.elapsed++;
+      if (this.elapsed % 10 === 0) {
+        if (this.frameLoop < this.frames - 1) this.frameLoop++;
+        else this.frameLoop = 0;
+      }
+    }
   }
-}
-class MainChar {
-  constructor(level, hp, attack, isGodModeEnabled) {
-    this.level = level;
-    this.hp = hp;
-    this.attack = attack;
-    this.isGodModeEnabled = isGodModeEnabled;
-  }
-  baseAttack() {}
-  blink(distance) {}
 }
 
 // ----------------------- COLLISIONS -------------------
@@ -61,10 +80,18 @@ collisionsMap.forEach((collisionsRow, k) => {
           k * aspectRatioGlobal + offsetYpos
         )
       );
-      console.log("Peta?");
     }
   });
 });
+
+function rectangularCollisionTest(rectangle1, rectangle2, rect2x, rect2y) {
+  return (
+    rectangle1.x + rectangle1.width + rectangle1.width / 3 >= rect2x &&
+    rectangle1.x + rectangle1.width / 1.5 <= rect2x + rectangle2.width &&
+    rectangle1.y <= rect2y + rectangle2.height &&
+    rectangle1.y + rectangle1.height * 2 >= rect2y
+  );
+}
 // ----------------------- EVENTS -------------------
 
 const keys = {
@@ -90,11 +117,14 @@ const keys = {
     pressed: false,
   },
 };
-
+window.addEventListener("click", (event) => {
+  mousePosX = event.clientX;
+  mousePosY = event.clientY;
+  console.log(" Mouse : (" + mousePosX + "," + mousePosY + ")");
+});
 window.addEventListener("keydown", (e) => {
   switch (e.key) {
     case "w":
-      console.log("W is pressed");
       keys.w.pressed = true;
       lastKey = e;
       break;
@@ -159,62 +189,159 @@ window.onload = () => {
 
   const backgroundImage = new Image();
   const playerImage = new Image();
+  const playerImageMoving = new Image();
 
   backgroundImage.src = "Tiles/finalMapTile.png";
   playerImage.src = "img/character/playerIdle.png";
-  const background = new Sprite(offsetXpos, offsetYpos, backgroundImage);
+  playerImage.sry = "img/character/playerRunning.png";
+  const background = new Sprite(offsetXpos, offsetYpos, backgroundImage, 1);
+  const movables = [background, ...boundariesArray];
+
+  const player = new Sprite(
+    myCanvas.width / 2 - 288 / 12, // 288 and 240 is the size of the player's image
+    myCanvas.height / 2 - 240 / 2,
+    playerImage,
+    6
+  );
 
   function animationLoop() {
     window.requestAnimationFrame(animationLoop);
 
     background.draw(ctx);
-    boundariesArray.forEach((boundary) => {
-      boundary.draw(ctx);
-    });
+    //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
-    // ctx.drawImage(backgroundImage, -400, -1200); //-350, -250
+    // boundariesArray.forEach((boundary) => {
+    //   if (rectangularCollisionTest(player, boundary, boundary.x, boundary.y)) {
+    //     console.log("colliding");
+    //   }
+    //   boundary.draw(ctx);
+    // });
 
-    ctx.drawImage(
-      playerImage,
-      0,
-      0,
-      playerImage.width / 6,
-      playerImage.height,
-      myCanvas.width / 2 - playerImage.width / 12,
-      myCanvas.height / 2 - playerImage.height / 2,
-      (playerImage.width / 6) * 2,
-      playerImage.height * 2
-    );
+    //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
+
+    player.draw(ctx);
+
     // ----------------------- CHARACTER MOVEMENT -------------------
-    if (keys.w.pressed == true) background.y += speed;
 
-    if (keys.s.pressed == true) background.y -= speed;
+    if (keys.w.pressed == true) {
+      for (i = 0; i < boundariesArray.length; i++) {
+        let boundary = boundariesArray[i];
 
-    if (keys.a.pressed == true) background.x += speed;
+        if (
+          rectangularCollisionTest(
+            player,
+            boundary,
+            boundary.x,
+            boundary.y + speed // we add speed so we can check the future position, if there is collision
+          )
+        ) {
+          moving = false;
+          break;
+        } // check if future position is valid
+      }
+      if (moving == true) {
+        // if valid, we let our player move
+        movables.forEach((movable) => {
+          movable.y += speed;
+        });
+      } else moving = true;
+    }
 
-    if (keys.d.pressed == true) background.x -= speed;
+    if (keys.s.pressed == true) {
+      for (i = 0; i < boundariesArray.length; i++) {
+        let boundary = boundariesArray[i];
 
+        if (
+          rectangularCollisionTest(
+            player,
+            boundary,
+            boundary.x,
+            boundary.y - speed
+          )
+        ) {
+          moving = false;
+          break;
+        }
+      }
+      if (moving == true) {
+        movables.forEach((movable) => {
+          movable.y -= speed;
+        });
+      } else moving = true;
+    }
+
+    if (keys.a.pressed == true) {
+      for (i = 0; i < boundariesArray.length; i++) {
+        let boundary = boundariesArray[i];
+
+        if (
+          rectangularCollisionTest(
+            player,
+            boundary,
+            boundary.x + speed,
+            boundary.y
+          )
+        ) {
+          moving = false;
+          break;
+        }
+      }
+      if (moving == true) {
+        movables.forEach((movable) => {
+          movable.x += speed;
+        });
+      } else moving = true;
+    }
+
+    if (keys.d.pressed == true) {
+      for (i = 0; i < boundariesArray.length; i++) {
+        let boundary = boundariesArray[i];
+        if (
+          rectangularCollisionTest(
+            player,
+            boundary,
+            boundary.x - speed,
+            boundary.y
+          )
+        ) {
+          moving = false;
+          break;
+        }
+      }
+      if (moving == true) {
+        movables.forEach((movable) => {
+          movable.x -= speed;
+        });
+      } else moving = true;
+    }
     if (keys.space.pressed == true) {
-      console.log(lastKey);
       switch (lastKey.key) {
         case "w":
-          background.y += speed * blinkSpeed;
+          movables.forEach((movable) => {
+            movable.y += speed * blinkSpeed;
+          });
+
           break;
         case "s":
-          background.y -= speed * blinkSpeed;
+          movables.forEach((movable) => {
+            movable.y -= speed * blinkSpeed;
+          });
           break;
         case "a":
-          background.x += speed * blinkSpeed;
+          movables.forEach((movable) => {
+            movable.x += speed * blinkSpeed;
+          });
           break;
         case "d":
-          background.x -= speed * blinkSpeed;
+          movables.forEach((movable) => {
+            movable.x -= speed * blinkSpeed;
+          });
           break;
 
         default:
           break;
       }
     }
-    console.log("Char/BG Pos : (" + background.y + "," + background.x + ")");
   }
 
   animationLoop();
