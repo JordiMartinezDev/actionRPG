@@ -39,6 +39,7 @@ class Boundary {
     ctx.fillRect(this.x, this.y, this.width, this.height);
   }
 }
+
 class Sprite {
   constructor(x, y, image, frames, sprites = []) {
     this.x = x;
@@ -75,6 +76,36 @@ class Sprite {
         else this.frameLoop = 0;
       }
     }
+  }
+}
+
+class Attack {
+  constructor(image, x, y, size) {
+    this.image = image;
+    this.x = x;
+    this.y = y;
+    this.size = size;
+  }
+  draw(ctx) {
+    ctx.drawImage(
+      this.image,
+      0,
+      0,
+      this.image.width,
+      this.image.height,
+      this.x,
+      this.y,
+      this.image.width,
+      this.image.height
+    );
+  }
+}
+
+class Enemy {
+  constructor() {
+    this.sprite = sprite;
+    this.x = x;
+    this.y = y;
   }
 }
 
@@ -209,6 +240,10 @@ window.onload = () => {
   const playerRunningLeft = new Image();
   const playerAttackRight = new Image();
   const playerAttackLeft = new Image();
+  const attackAnimation = new Image();
+  const attackAnimation2 = new Image();
+  const attackAnimation3 = new Image();
+  const attackAnimation4 = new Image();
 
   backgroundImage.src = "Tiles/finalMapTile.png";
   playerIdle.src = "img/character/playerIdle.png";
@@ -216,6 +251,10 @@ window.onload = () => {
   playerRunningLeft.src = "img/character/playerRunningLeft.png";
   playerAttackRight.src = "img/character/playerAttackRight.png";
   playerAttackLeft.src = "img/character/playerAttackLeft.png";
+  attackAnimation.src = "img/character/attack1.png";
+  attackAnimation2.src = "img/character/attack2.png";
+  attackAnimation3.src = "img/character/attack3.png";
+  attackAnimation4.src = "img/character/attack4.png";
 
   const background = new Sprite(offsetXpos, offsetYpos, backgroundImage, 1);
   const movables = [background, ...boundariesArray];
@@ -235,24 +274,51 @@ window.onload = () => {
       },
     }
   );
+  let attackPositionX = player.x + 100;
+  let attackPositionY = player.y - 40;
+
+  const attack = new Attack(
+    attackAnimation,
+    attackPositionX,
+    attackPositionY,
+    10
+  );
+  const attack2 = new Attack(
+    attackAnimation2,
+    attackPositionX,
+    attackPositionY,
+    10
+  );
+  const attack3 = new Attack(
+    attackAnimation3,
+    attackPositionX,
+    attackPositionY,
+    10
+  );
+  const attack4 = new Attack(
+    attackAnimation4,
+    attackPositionX,
+    attackPositionY,
+    10
+  );
+
+  attacksArray = [attack, attack2, attack3, attack4];
+  let elapsedLoop = 0;
+  let attackFrame = 0;
 
   function animationLoop() {
     window.requestAnimationFrame(animationLoop);
 
     background.draw(ctx);
-    //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
-
-    boundariesArray.forEach((boundary) => {
-      if (rectangularCollisionTest(player, boundary, boundary.x, boundary.y)) {
-        console.log("colliding");
-      }
-      boundary.draw(ctx);
-    });
-
-    //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
     player.draw(ctx);
+    elapsedLoop++;
+    //console.log(elapsedLoop);
+    if (elapsedLoop % 10 === 0) attackFrame++;
+    else if (attackFrame > 3) attackFrame = 0;
+    console.log(attackFrame);
 
+    if (attacksArray[attackFrame] != null) attacksArray[attackFrame].draw(ctx);
     // ----------------------- CHARACTER MOVEMENT -------------------
 
     if (keys.w.pressed == true) {
@@ -453,7 +519,7 @@ window.onload = () => {
         break;
       case " ":
         keys.space.pressed = false;
-        player.image = playerIdle;
+        //player.image = playerIdle;
         break;
       case "f":
         keys.f.pressed = false;
@@ -464,6 +530,17 @@ window.onload = () => {
         break;
     }
   });
+
+  //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
+
+  // boundariesArray.forEach((boundary) => {
+  //   if (rectangularCollisionTest(player, boundary, boundary.x, boundary.y)) {
+  //     console.log("colliding");
+  //   }
+  //   boundary.draw(ctx);
+  // });
+
+  //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
   animationLoop();
 };
