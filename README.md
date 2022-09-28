@@ -1,2 +1,0 @@
-# actionRPG
-Game Project - Ironhack
