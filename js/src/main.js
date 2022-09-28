@@ -10,6 +10,20 @@ const boundariesArray = [];
 
 let moving = true;
 
+const backgroundImage = new Image();
+const playerIdle = new Image();
+const playerRunningRight = new Image();
+const playerRunningLeft = new Image();
+const playerAttackRight = new Image();
+const playerAttackLeft = new Image();
+
+backgroundImage.src = "Tiles/finalMapTile.png";
+playerIdle.src = "img/character/playerIdle.png";
+playerRunningRight.src = "img/character/playerRunning.png";
+playerRunningLeft.src = "img/character/playerRunningLeft.png";
+playerAttackRight.src = "img/character/playerAttackRight.png";
+playerAttackLeft.src = "img/character/playerAttackLeft.png";
+
 // ----------------------- CLASSES -------------------
 class Boundary {
   constructor(x, y) {
@@ -26,7 +40,7 @@ class Boundary {
   }
 }
 class Sprite {
-  constructor(x, y, image, frames) {
+  constructor(x, y, image, frames, sprites = []) {
     this.x = x;
     this.y = y;
     this.image = image;
@@ -38,6 +52,7 @@ class Sprite {
       this.width = this.image.width / this.frames;
       this.height = this.image.height;
     };
+    this.sprites = sprites;
   }
   draw(ctx) {
     if (this.frames == 1) ctx.drawImage(this.image, this.x, this.y);
@@ -187,21 +202,38 @@ window.onload = () => {
   const myCanvas = document.querySelector("canvas");
   const ctx = myCanvas.getContext("2d");
 
+  // ----------------------- IMAGES -------------------
   const backgroundImage = new Image();
-  const playerImage = new Image();
-  const playerImageMoving = new Image();
+  const playerIdle = new Image();
+  const playerRunningRight = new Image();
+  const playerRunningLeft = new Image();
+  const playerAttackRight = new Image();
+  const playerAttackLeft = new Image();
 
   backgroundImage.src = "Tiles/finalMapTile.png";
-  playerImage.src = "img/character/playerIdle.png";
-  playerImage.sry = "img/character/playerRunning.png";
+  playerIdle.src = "img/character/playerIdle.png";
+  playerRunningRight.src = "img/character/playerRunning.png";
+  playerRunningLeft.src = "img/character/playerRunningLeft.png";
+  playerAttackRight.src = "img/character/playerAttackRight.png";
+  playerAttackLeft.src = "img/character/playerAttackLeft.png";
+
   const background = new Sprite(offsetXpos, offsetYpos, backgroundImage, 1);
   const movables = [background, ...boundariesArray];
 
   const player = new Sprite(
     myCanvas.width / 2 - 288 / 12, // 288 and 240 is the size of the player's image
     myCanvas.height / 2 - 240 / 2,
-    playerImage,
-    6
+    playerIdle,
+    6,
+    {
+      sprites: {
+        idle: playerIdle,
+        runRight: playerRunningLeft,
+        runLeft: playerRunningRight,
+        attackRight: playerAttackRight,
+        attackLeft: playerAttackLeft,
+      },
+    }
   );
 
   function animationLoop() {
@@ -210,12 +242,12 @@ window.onload = () => {
     background.draw(ctx);
     //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
-    // boundariesArray.forEach((boundary) => {
-    //   if (rectangularCollisionTest(player, boundary, boundary.x, boundary.y)) {
-    //     console.log("colliding");
-    //   }
-    //   boundary.draw(ctx);
-    // });
+    boundariesArray.forEach((boundary) => {
+      if (rectangularCollisionTest(player, boundary, boundary.x, boundary.y)) {
+        console.log("colliding");
+      }
+      boundary.draw(ctx);
+    });
 
     //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
@@ -224,6 +256,7 @@ window.onload = () => {
     // ----------------------- CHARACTER MOVEMENT -------------------
 
     if (keys.w.pressed == true) {
+      player.image = playerRunningRight;
       for (i = 0; i < boundariesArray.length; i++) {
         let boundary = boundariesArray[i];
 
@@ -248,6 +281,7 @@ window.onload = () => {
     }
 
     if (keys.s.pressed == true) {
+      player.image = playerRunningLeft;
       for (i = 0; i < boundariesArray.length; i++) {
         let boundary = boundariesArray[i];
 
@@ -271,6 +305,7 @@ window.onload = () => {
     }
 
     if (keys.a.pressed == true) {
+      player.image = playerRunningLeft;
       for (i = 0; i < boundariesArray.length; i++) {
         let boundary = boundariesArray[i];
 
@@ -294,6 +329,7 @@ window.onload = () => {
     }
 
     if (keys.d.pressed == true) {
+      player.image = playerRunningRight;
       for (i = 0; i < boundariesArray.length; i++) {
         let boundary = boundariesArray[i];
         if (
@@ -317,32 +353,117 @@ window.onload = () => {
     if (keys.space.pressed == true) {
       switch (lastKey.key) {
         case "w":
-          movables.forEach((movable) => {
-            movable.y += speed * blinkSpeed;
-          });
+          player.image = playerAttackRight;
 
           break;
         case "s":
-          movables.forEach((movable) => {
-            movable.y -= speed * blinkSpeed;
-          });
+          player.image = playerAttackLeft;
           break;
         case "a":
-          movables.forEach((movable) => {
-            movable.x += speed * blinkSpeed;
-          });
+          player.image = playerAttackLeft;
           break;
         case "d":
-          movables.forEach((movable) => {
-            movable.x -= speed * blinkSpeed;
-          });
+          player.image = playerAttackRight;
           break;
 
         default:
+          player.image = playerIdle;
           break;
       }
     }
   }
+
+  const keys = {
+    w: {
+      pressed: false,
+    },
+    s: {
+      pressed: false,
+    },
+    a: {
+      pressed: false,
+    },
+    d: {
+      pressed: false,
+    },
+    space: {
+      pressed: false,
+    },
+    f: {
+      pressed: false,
+    },
+    r: {
+      pressed: false,
+    },
+  };
+  window.addEventListener("click", (event) => {
+    mousePosX = event.clientX;
+    mousePosY = event.clientY;
+    console.log(" Mouse : (" + mousePosX + "," + mousePosY + ")");
+  });
+  window.addEventListener("keydown", (e) => {
+    switch (e.key) {
+      case "w":
+        keys.w.pressed = true;
+        lastKey = e;
+        break;
+      case "s":
+        keys.s.pressed = true;
+        lastKey = e;
+        break;
+      case "a":
+        keys.a.pressed = true;
+        lastKey = e;
+        break;
+      case "d":
+        keys.d.pressed = true;
+        lastKey = e;
+        break;
+      case " ":
+        keys.space.pressed = true;
+
+        break;
+      case "f":
+        keys.f.pressed = true;
+        lastKey = e;
+        break;
+
+      default:
+        break;
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    switch (e.key) {
+      case "w":
+        keys.w.pressed = false;
+        player.image = playerIdle;
+        break;
+      case "s":
+        keys.s.pressed = false;
+        player.image = playerIdle;
+        break;
+      case "a":
+        keys.a.pressed = false;
+        player.image = playerIdle;
+        break;
+      case "d":
+        keys.d.pressed = false;
+        player.image = playerIdle;
+        break;
+      case " ":
+        keys.space.pressed = false;
+        player.image = playerIdle;
+        break;
+      case "f":
+        keys.f.pressed = false;
+        player.image = playerIdle;
+        break;
+
+      default:
+        break;
+    }
+  });
 
   animationLoop();
 };
