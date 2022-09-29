@@ -1,15 +1,21 @@
 // ----------------------- GLOBAL CONST -------------------
-const offsetXpos = -600;
-const offsetYpos = -3200;
+const offsetXpos = -900;
+const offsetYpos = -3100;
 const aspectRatioGlobal = 30; // Aspect ratio modified origianl
-let speed = 3;
+let speed = 5;
 let blinkSpeed = 5;
 let lastKey = "w";
 const collisionsMap = [];
 const boundariesArray = [];
-let attackDirection = 1;
+let collisioning = false;
+
+let enemySpeed = 1;
+
+let enemyQuantity = 30;
 
 let moving = true;
+
+let points = 0;
 
 const backgroundImage = new Image();
 const playerIdle = new Image();
@@ -70,7 +76,6 @@ class Sprite {
         (this.image.width / this.frames) * 2,
         this.image.height * 2
       );
-      //console.log(this.frameLoop);
       if (this.frames > 1) this.elapsed++;
       if (this.elapsed % 10 === 0) {
         if (this.frameLoop < this.frames - 1) this.frameLoop++;
@@ -110,7 +115,8 @@ class Enemy extends Sprite {
     this.elapsedTimer = 0;
     this.frameLoop = 0; // initial sprite
     this.width = this.image.width;
-
+    if (frames < 5) this.enemySpeed = 1;
+    else this.enemySpeed = 2;
     this.image.onload = () => {
       this.width = this.image.width / this.frames;
       this.height = this.image.height;
@@ -135,19 +141,33 @@ class Enemy extends Sprite {
       else this.frameLoop = 0;
     }
   }
-  move(goToX, goToY, enemySpeed, lastkey) {
-    switch (lastkey) {
-      case "w":
-        break;
-
-      default:
-        break;
+  move(goToX, goToY, enemySpeed, keys, collision) {
+    goToX += 32; //Player's width
+    if (
+      !(keys.w.pressed || keys.s.pressed || keys.d.pressed || keys.a.pressed)
+    ) {
+      if (this.x <= goToX) this.x += enemySpeed;
+      if (this.y <= goToY) this.y += enemySpeed;
+      if (this.x >= goToX) this.x -= enemySpeed;
+      if (this.y >= goToY) this.y -= enemySpeed;
+    } else {
+      if (keys.w.pressed) {
+        if (this.y <= goToY) this.y += enemySpeed + speed;
+        if (this.y >= goToY) this.y -= enemySpeed - speed;
+      }
+      if (keys.s.pressed) {
+        if (this.y <= goToY) this.y += enemySpeed - speed;
+        if (this.y >= goToY) this.y -= enemySpeed + speed;
+      }
+      if (keys.a.pressed) {
+        if (this.x <= goToX) this.x += enemySpeed + speed;
+        if (this.x >= goToX) this.x -= enemySpeed - speed;
+      }
+      if (keys.d.pressed) {
+        if (this.x <= goToX) this.x += enemySpeed - speed;
+        if (this.x >= goToX) this.x -= enemySpeed + speed;
+      }
     }
-
-    if (this.x < goToX) this.x += enemySpeed;
-    if (this.y < goToY) this.y += enemySpeed;
-    if (this.x > goToX) this.x -= enemySpeed;
-    if (this.y > goToY) this.y -= enemySpeed;
   }
 }
 
@@ -362,14 +382,22 @@ window.onload = () => {
   let attackFrame = 0;
 
   const enemiesArray = [];
-  for (i = 0; i < 20; i++) {
-    let randX = Math.floor(Math.random() * 2000) - 500;
-    let randY = Math.floor(Math.random() * 2000) - 500;
+  for (i = 0; i < enemyQuantity; i++) {
+    let randX = Math.floor(Math.random() * 2000) - 1000;
+    let randY = Math.floor(Math.random() * 2000) - 1000;
     enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
     enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
   }
 
-  //ctx.fillRect(attackPositionX, attackPositionY, attack.width, attck.height);
+  let SpawnEnemiesIntervalID = setInterval(() => {
+    for (i = 0; i < enemyQuantity; i++) {
+      let randX = Math.floor(Math.random() * 2000) - 1000;
+      let randY = Math.floor(Math.random() * 2000) - 1000;
+      enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
+      enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
+    }
+  }, 10000);
+
   ctx.fillStyle = "rgba(255,50,0,0.5)";
   function animationLoop() {
     window.requestAnimationFrame(animationLoop);
@@ -378,10 +406,16 @@ window.onload = () => {
 
     player.draw(ctx);
 
-    for (i = 0; i < 40; i++) {
+    for (i = 0; i < enemiesArray.length; i++) {
       enemiesArray[i].draw(ctx);
-      ctx.fillRect(enemiesArray[i].x, enemiesArray[i].y, 32, 32);
-      enemiesArray[i].move(player.x, player.y, 1.5, lastKey.key);
+      //ctx.fillRect(enemiesArray[i].x, enemiesArray[i].y, 32, 32);
+      enemiesArray[i].move(
+        player.x,
+        player.y,
+        enemiesArray[i].enemySpeed,
+        keys,
+        collisioning
+      );
 
       let rectEnemy = {
         x: enemiesArray[i].x,
@@ -391,70 +425,86 @@ window.onload = () => {
       };
       let rectAttack = {
         x: attackPositionX,
-        y: attackPositionY,
-        width: 150,
-        height: 125,
+        y: attackPositionY + 20,
+        width: 125,
+        height: 100,
       };
 
       if (
         attackCollisionTest(rectEnemy, rectAttack, rectAttack.x, rectAttack.y)
       ) {
-        console.log("CLLISION!!");
-        //enemiesArray[i].splice();
+        points++;
+        enemiesArray.splice(i, 1);
       }
     }
 
     elapsedLoop++;
-    ctx.fillRect(attackPositionX, attackPositionY, 150, 125);
+    //ctx.fillRect(attackPositionX, attackPositionY + 20, 125, 100);
+
+    //---- Check Enemy&Player collision
+    for (i = 0; i < enemiesArray.length; i++) {
+      ctx.fillRect(520, 175, 32, 32);
+
+      let rectEnemy = {
+        x: enemiesArray[i].x,
+        y: enemiesArray[i].y,
+        width: 32,
+        height: 32,
+      };
+      //ctx.fillRect(rectEnemy.x, rectEnemy.y, rectEnemy.width, rectEnemy.height);
+      let rectPlayer = {
+        x: 520,
+        y: 175,
+        width: 32,
+        height: 32,
+      };
+
+      if (
+        attackCollisionTest(rectPlayer, rectEnemy, rectEnemy.x, rectEnemy.y)
+      ) {
+        console.log("MIVIDAAA");
+      }
+    }
+
     // -------------- CHANGE ATTACK DIRECTION ------------
     switch (lastKey.key) {
       case "w":
         attackPositionX = 475;
         attackPositionY = 0;
-        attackDirection = 1;
 
         break;
       case "s":
         attackPositionX = 475;
         attackPositionY = 250;
-        attackDirection = 2;
+
         break;
       case "a":
         attackPositionX = 300;
         attackPositionY = 125;
-        attackDirection = 3;
+
         break;
       case "d":
         attackPositionX = 650;
         attackPositionY = 125;
-        attackDirection = 4;
+
         break;
 
       default:
         break;
     }
 
-    //Check collisions attack/enemy here
-
-    // for (i = 0; i < enemiesArray.length; i++) {
-    //   for (j = 0; j < attacksArray.length; j++) {
-    //     if (
-    //       rectangularCollisionTest(enemiesArray[i], player, player.x, player.y)
-    //     )
-    //       console.log("collision");
-    //   }
-    // }
-
     for (i = 0; i < attacksArray.length; i++) {
       attacksArray[i].x = attackPositionX;
       attacksArray[i].y = attackPositionY;
     }
-    if (elapsedLoop % 7 === 0) attackFrame++;
+    if (elapsedLoop % 5 === 0) attackFrame++;
     else if (attackFrame > 3) attackFrame = 0;
 
     if (attacksArray[attackFrame] != null && elapsedLoop > 50)
       attacksArray[attackFrame].draw(ctx);
-    if (elapsedLoop > 150) elapsedLoop = 0;
+    if (elapsedLoop > 150) {
+      elapsedLoop = 0;
+    }
 
     // ----------------------- CHARACTER MOVEMENT -------------------
 
@@ -472,6 +522,8 @@ window.onload = () => {
           )
         ) {
           moving = false;
+          collisioning = true;
+
           break;
         } // check if future position is valid
       }
@@ -497,6 +549,8 @@ window.onload = () => {
           )
         ) {
           moving = false;
+          collisioning = true;
+
           break;
         }
       }
@@ -521,6 +575,8 @@ window.onload = () => {
           )
         ) {
           moving = false;
+          collisioning = true;
+
           break;
         }
       }
@@ -544,6 +600,8 @@ window.onload = () => {
           )
         ) {
           moving = false;
+          collisioning = true;
+
           break;
         }
       }
@@ -553,27 +611,6 @@ window.onload = () => {
         });
       } else moving = true;
     }
-    // if (keys.space.pressed == true) {
-    //   switch (lastKey.key) {
-    //     case "w":
-    //       player.image = playerAttackRight;
-
-    //       break;
-    //     case "s":
-    //       player.image = playerAttackLeft;
-    //       break;
-    //     case "a":
-    //       player.image = playerAttackLeft;
-    //       break;
-    //     case "d":
-    //       player.image = playerAttackRight;
-    //       break;
-
-    //     default:
-    //       player.image = playerIdle;
-    //       break;
-    //   }
-    // }
   }
 
   const keys = {
@@ -642,6 +679,7 @@ window.onload = () => {
       case "w":
         keys.w.pressed = false;
         player.image = playerIdle;
+
         break;
       case "s":
         keys.s.pressed = false;
@@ -672,9 +710,7 @@ window.onload = () => {
   //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
   // boundariesArray.forEach((boundary) => {
-  //   if (rectangularCollisionTest(player, boundary, boundary.x, boundary.y)) {
-  //     console.log("colliding");
-  //   }
+  //
   //   boundary.draw(ctx);
   // });
 
