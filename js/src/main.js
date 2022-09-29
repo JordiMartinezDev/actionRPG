@@ -7,6 +7,7 @@ let blinkSpeed = 5;
 let lastKey = "w";
 const collisionsMap = [];
 const boundariesArray = [];
+let attackDirection = 1;
 
 let moving = true;
 
@@ -134,7 +135,15 @@ class Enemy extends Sprite {
       else this.frameLoop = 0;
     }
   }
-  move(goToX, goToY, enemySpeed) {
+  move(goToX, goToY, enemySpeed, lastkey) {
+    switch (lastkey) {
+      case "w":
+        break;
+
+      default:
+        break;
+    }
+
     if (this.x < goToX) this.x += enemySpeed;
     if (this.y < goToY) this.y += enemySpeed;
     if (this.x > goToX) this.x -= enemySpeed;
@@ -171,6 +180,14 @@ function rectangularCollisionTest(rectangle1, rectangle2, rect2x, rect2y) {
     rectangle1.y + rectangle1.height * 2 >= rect2y
   );
 }
+function attackCollisionTest(rectangle1, rectangle2, rect2x, rect2y) {
+  return (
+    rectangle1.x + rectangle1.width + rectangle1.width >= rect2x &&
+    rectangle1.x + rectangle1.width <= rect2x + rectangle2.width &&
+    rectangle1.y <= rect2y + rectangle2.height &&
+    rectangle1.y + rectangle1.height >= rect2y
+  );
+}
 // ----------------------- EVENTS -------------------
 
 const keys = {
@@ -205,6 +222,7 @@ window.addEventListener("keydown", (e) => {
   switch (e.key) {
     case "w":
       keys.w.pressed = true;
+
       lastKey = e;
       break;
     case "s":
@@ -351,6 +369,8 @@ window.onload = () => {
     enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
   }
 
+  //ctx.fillRect(attackPositionX, attackPositionY, attack.width, attck.height);
+  ctx.fillStyle = "rgba(255,50,0,0.5)";
   function animationLoop() {
     window.requestAnimationFrame(animationLoop);
 
@@ -360,38 +380,70 @@ window.onload = () => {
 
     for (i = 0; i < 40; i++) {
       enemiesArray[i].draw(ctx);
-      enemiesArray[i].move(player.x, player.y, 1.5);
+      ctx.fillRect(enemiesArray[i].x, enemiesArray[i].y, 32, 32);
+      enemiesArray[i].move(player.x, player.y, 1.5, lastKey.key);
+
+      let rectEnemy = {
+        x: enemiesArray[i].x,
+        y: enemiesArray[i].y,
+        width: 32,
+        height: 32,
+      };
+      let rectAttack = {
+        x: attackPositionX,
+        y: attackPositionY,
+        width: 150,
+        height: 125,
+      };
+
+      if (
+        attackCollisionTest(rectEnemy, rectAttack, rectAttack.x, rectAttack.y)
+      ) {
+        console.log("CLLISION!!");
+        //enemiesArray[i].splice();
+      }
     }
 
     elapsedLoop++;
-
+    ctx.fillRect(attackPositionX, attackPositionY, 150, 125);
     // -------------- CHANGE ATTACK DIRECTION ------------
     switch (lastKey.key) {
       case "w":
         attackPositionX = 475;
         attackPositionY = 0;
+        attackDirection = 1;
 
         break;
       case "s":
         attackPositionX = 475;
         attackPositionY = 250;
+        attackDirection = 2;
         break;
       case "a":
         attackPositionX = 300;
         attackPositionY = 125;
+        attackDirection = 3;
         break;
       case "d":
         attackPositionX = 650;
         attackPositionY = 125;
+        attackDirection = 4;
         break;
 
       default:
-        attackPositionX = -1000;
-        attackPositionY = -1000;
         break;
     }
 
     //Check collisions attack/enemy here
+
+    // for (i = 0; i < enemiesArray.length; i++) {
+    //   for (j = 0; j < attacksArray.length; j++) {
+    //     if (
+    //       rectangularCollisionTest(enemiesArray[i], player, player.x, player.y)
+    //     )
+    //       console.log("collision");
+    //   }
+    // }
 
     for (i = 0; i < attacksArray.length; i++) {
       attacksArray[i].x = attackPositionX;
@@ -501,27 +553,27 @@ window.onload = () => {
         });
       } else moving = true;
     }
-    if (keys.space.pressed == true) {
-      switch (lastKey.key) {
-        case "w":
-          player.image = playerAttackRight;
+    // if (keys.space.pressed == true) {
+    //   switch (lastKey.key) {
+    //     case "w":
+    //       player.image = playerAttackRight;
 
-          break;
-        case "s":
-          player.image = playerAttackLeft;
-          break;
-        case "a":
-          player.image = playerAttackLeft;
-          break;
-        case "d":
-          player.image = playerAttackRight;
-          break;
+    //       break;
+    //     case "s":
+    //       player.image = playerAttackLeft;
+    //       break;
+    //     case "a":
+    //       player.image = playerAttackLeft;
+    //       break;
+    //     case "d":
+    //       player.image = playerAttackRight;
+    //       break;
 
-        default:
-          player.image = playerIdle;
-          break;
-      }
-    }
+    //     default:
+    //       player.image = playerIdle;
+    //       break;
+    //   }
+    // }
   }
 
   const keys = {
