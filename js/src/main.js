@@ -106,16 +106,14 @@ class Enemy extends Sprite {
     super(x, y, image, frames);
 
     this.frames = frames; // max different sprites in case there is an animation
-    this.elapsed = 0;
+    this.elapsedTimer = 0;
     this.frameLoop = 0; // initial sprite
     this.width = this.image.width;
-    console.log("This Width Enemy: " + this.width);
 
     this.image.onload = () => {
       this.width = this.image.width / this.frames;
       this.height = this.image.height;
     };
-    console.log("This Width Enemy: " + this.width);
   }
   draw(ctx) {
     ctx.drawImage(
@@ -129,14 +127,19 @@ class Enemy extends Sprite {
       (this.image.width / this.frames) * 2,
       this.image.height * 2
     );
-    //console.log(this.frameLoop);
-    this.elapsed++;
-    if (this.elapsed % 10 === 0) {
+    this.elapsedTimer++;
+
+    if (this.elapsedTimer % 10 == 0) {
       if (this.frameLoop < this.frames - 1) this.frameLoop++;
       else this.frameLoop = 0;
     }
   }
-  move() {}
+  move(goToX, goToY, enemySpeed) {
+    if (this.x < goToX) this.x += enemySpeed;
+    if (this.y < goToY) this.y += enemySpeed;
+    if (this.x > goToX) this.x -= enemySpeed;
+    if (this.y > goToY) this.y -= enemySpeed;
+  }
 }
 
 // ----------------------- COLLISIONS -------------------
@@ -275,6 +278,7 @@ window.onload = () => {
   const attackAnimation3 = new Image();
   const attackAnimation4 = new Image();
   const enemyImage = new Image();
+  const enemySlimeImage = new Image();
 
   backgroundImage.src = "Tiles/finalMapTile.png";
   playerIdle.src = "img/character/playerIdle.png";
@@ -287,6 +291,7 @@ window.onload = () => {
   attackAnimation3.src = "img/character/attack3.png";
   attackAnimation4.src = "img/character/attack4.png";
   enemyImage.src = "img/Enemies/skel_idle_down.png";
+  enemySlimeImage.src = "img/Enemies/slime-orange.png";
 
   const background = new Sprite(offsetXpos, offsetYpos, backgroundImage, 1);
   const movables = [background, ...boundariesArray];
@@ -338,12 +343,26 @@ window.onload = () => {
   let elapsedLoop = 0;
   let attackFrame = 0;
 
+  const enemiesArray = [];
+  for (i = 0; i < 20; i++) {
+    let randX = Math.floor(Math.random() * 2000) - 500;
+    let randY = Math.floor(Math.random() * 2000) - 500;
+    enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
+    enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
+  }
+
   function animationLoop() {
     window.requestAnimationFrame(animationLoop);
 
     background.draw(ctx);
 
     player.draw(ctx);
+
+    for (i = 0; i < 40; i++) {
+      enemiesArray[i].draw(ctx);
+      enemiesArray[i].move(player.x, player.y, 1.5);
+    }
+
     elapsedLoop++;
 
     // -------------- CHANGE ATTACK DIRECTION ------------
@@ -371,13 +390,7 @@ window.onload = () => {
         attackPositionY = -1000;
         break;
     }
-    const enemiesArray = [];
-    for (i = 0; i < 100; i++) {
-      const tempEnemy = new Enemy(player.x, player.y, enemyImage, 6);
-      tempEnemy.draw(ctx);
-      enemiesArray.push(tempEnemy);
-    }
-    // console.log(enemiesArray);
+
     //Check collisions attack/enemy here
 
     for (i = 0; i < attacksArray.length; i++) {
