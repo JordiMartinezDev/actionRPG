@@ -10,7 +10,7 @@ const boundariesArray = [];
 let collisioning = false;
 
 let enemySpeed = 1;
-
+let hpPoints = 200;
 let enemyQuantity = 30;
 
 let moving = true;
@@ -191,7 +191,19 @@ collisionsMap.forEach((collisionsRow, k) => {
     }
   });
 });
-
+function gameOver(ctx, myCanvas, animate) {
+  cancelAnimationFrame(animate);
+  ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+  window.requestAnimationFrame(gameOverScreen);
+  gameOverScreen();
+}
+function gameOverScreen() {
+  let gameOverImage = new Image();
+  gameOverImage.src = "img/gameOver.png";
+  gameOverImage.onload(() => {
+    ctx.drawImage(gameOverImage.image, 0, 0, 500, 500);
+  });
+}
 function rectangularCollisionTest(rectangle1, rectangle2, rect2x, rect2y) {
   return (
     rectangle1.x + rectangle1.width + rectangle1.width / 3 >= rect2x &&
@@ -318,6 +330,8 @@ window.onload = () => {
   const enemyImage = new Image();
   const enemySlimeImage = new Image();
 
+  const gameOverImage = new Image();
+
   backgroundImage.src = "Tiles/finalMapTile.png";
   playerIdle.src = "img/character/playerIdle.png";
   playerRunningRight.src = "img/character/playerRunning.png";
@@ -330,6 +344,7 @@ window.onload = () => {
   attackAnimation4.src = "img/character/attack4.png";
   enemyImage.src = "img/Enemies/skel_idle_down.png";
   enemySlimeImage.src = "img/Enemies/slime-orange.png";
+  gameOverImage.src = "img/gameOver.png";
 
   const background = new Sprite(offsetXpos, offsetYpos, backgroundImage, 1);
   const movables = [background, ...boundariesArray];
@@ -400,8 +415,9 @@ window.onload = () => {
 
   ctx.fillStyle = "rgba(255,50,0,0.5)";
   function animationLoop() {
-    window.requestAnimationFrame(animationLoop);
+    animate = window.requestAnimationFrame(animationLoop);
 
+    //ctx.gameOverImage.drawImage(0, 0, myCanvas.width, myCanvas.height);
     background.draw(ctx);
 
     player.draw(ctx);
@@ -443,7 +459,7 @@ window.onload = () => {
 
     //---- Check Enemy&Player collision
     for (i = 0; i < enemiesArray.length; i++) {
-      ctx.fillRect(520, 175, 32, 32);
+      //ctx.fillRect(520, 175, 32, 32);
 
       let rectEnemy = {
         x: enemiesArray[i].x,
@@ -463,6 +479,10 @@ window.onload = () => {
         attackCollisionTest(rectPlayer, rectEnemy, rectEnemy.x, rectEnemy.y)
       ) {
         console.log("MIVIDAAA");
+        hpPoints--;
+        if (hpPoints <= 0) {
+          gameOver(ctx, myCanvas, animate);
+        }
       }
     }
 
@@ -497,10 +517,10 @@ window.onload = () => {
       attacksArray[i].x = attackPositionX;
       attacksArray[i].y = attackPositionY;
     }
-    if (elapsedLoop % 5 === 0) attackFrame++;
+    if (elapsedLoop % 7 === 0) attackFrame++;
     else if (attackFrame > 3) attackFrame = 0;
 
-    if (attacksArray[attackFrame] != null && elapsedLoop > 50)
+    if (attacksArray[attackFrame] != null && elapsedLoop > 10)
       attacksArray[attackFrame].draw(ctx);
     if (elapsedLoop > 150) {
       elapsedLoop = 0;
@@ -706,6 +726,11 @@ window.onload = () => {
         break;
     }
   });
+  // let gameOverImage = new Image();
+  // gameOverImage.src = "img/gameOver.png";
+  // gameOverImage.onload(() => {
+  //   ctx.drawImage(gameOverImage, 100, 100, 500, 500);
+  // });
 
   //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
