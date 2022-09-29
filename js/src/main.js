@@ -433,7 +433,10 @@ window.onload = () => {
     hpPoints = 100;
   }
   function gameCompleted() {
+    window.cancelAnimationFrame(animate);
     console.log("you win!!");
+    toggleScreen("mainCanvas", false);
+    toggleScreen("start-screen", true);
     points = 0;
   }
 
