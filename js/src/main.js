@@ -8,9 +8,11 @@ let lastKey = "w";
 const collisionsMap = [];
 const boundariesArray = [];
 let collisioning = false;
+startPlaying = false;
+const enemiesArray = [];
 
 let enemySpeed = 1;
-let hpPoints = 200;
+let hpPoints = 100;
 let enemyQuantity = 30;
 
 let moving = true;
@@ -191,19 +193,7 @@ collisionsMap.forEach((collisionsRow, k) => {
     }
   });
 });
-function gameOver(ctx, myCanvas, animate) {
-  cancelAnimationFrame(animate);
-  ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
-  window.requestAnimationFrame(gameOverScreen);
-  gameOverScreen();
-}
-function gameOverScreen() {
-  let gameOverImage = new Image();
-  gameOverImage.src = "img/gameOver.png";
-  gameOverImage.onload(() => {
-    ctx.drawImage(gameOverImage.image, 0, 0, 500, 500);
-  });
-}
+
 function rectangularCollisionTest(rectangle1, rectangle2, rect2x, rect2y) {
   return (
     rectangle1.x + rectangle1.width + rectangle1.width / 3 >= rect2x &&
@@ -348,6 +338,7 @@ window.onload = () => {
 
   const background = new Sprite(offsetXpos, offsetYpos, backgroundImage, 1);
   const movables = [background, ...boundariesArray];
+  const clonedArray = JSON.parse(JSON.stringify(movables));
 
   const player = new Sprite(
     myCanvas.width / 2 - 288 / 12, // 288 and 240 is the size of the player's image
@@ -396,14 +387,6 @@ window.onload = () => {
   let elapsedLoop = 0;
   let attackFrame = 0;
 
-  const enemiesArray = [];
-  for (i = 0; i < enemyQuantity; i++) {
-    let randX = Math.floor(Math.random() * 2000) - 1000;
-    let randY = Math.floor(Math.random() * 2000) - 1000;
-    enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
-    enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
-  }
-
   let SpawnEnemiesIntervalID = setInterval(() => {
     for (i = 0; i < enemyQuantity; i++) {
       let randX = Math.floor(Math.random() * 2000) - 1000;
@@ -414,8 +397,51 @@ window.onload = () => {
   }, 10000);
 
   ctx.fillStyle = "rgba(255,50,0,0.5)";
+
+  document.getElementById("startButton").addEventListener("click", (event) => {
+    console.log("Start");
+    toggleScreen("start-screen", false);
+    toggleScreen("mainCanvas", true);
+    startPlaying = true;
+
+    for (i = 0; i < enemyQuantity; i++) {
+      let randX = Math.floor(Math.random() * 2000) - 1000;
+      let randY = Math.floor(Math.random() * 2000) - 1000;
+      enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
+      enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
+    }
+    animationLoop();
+  });
+
+  function toggleScreen(id, toggle) {
+    let element = document.getElementById(id);
+    let display = toggle ? "block" : "none";
+    element.style.display = display;
+  }
+
+  function gameOver(ctx, myCanvas, animate) {
+    //enemiesArray.splice(0, enemiesArray.length);
+    //cancelAnimationFrame(animate);
+    //ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+    //window.requestAnimationFrame(gameOverScreen);
+    window.cancelAnimationFrame(animate);
+    toggleScreen("mainCanvas", false);
+    toggleScreen("start-screen", true);
+
+    enemiesArray.splice(0, enemiesArray.length);
+
+    hpPoints = 100;
+  }
+  function gameCompleted() {
+    console.log("you win!!");
+    points = 0;
+  }
+
   function animationLoop() {
+    if (startPlaying == false) return;
+    if (points > 100) gameCompleted();
     animate = window.requestAnimationFrame(animationLoop);
+    // window.cancelAnimationFrame(animate);
 
     //ctx.gameOverImage.drawImage(0, 0, myCanvas.width, myCanvas.height);
     background.draw(ctx);
@@ -424,7 +450,7 @@ window.onload = () => {
 
     for (i = 0; i < enemiesArray.length; i++) {
       enemiesArray[i].draw(ctx);
-      //ctx.fillRect(enemiesArray[i].x, enemiesArray[i].y, 32, 32);
+      ctx.fillRect(enemiesArray[i].x, enemiesArray[i].y, 32, 32);
       enemiesArray[i].move(
         player.x,
         player.y,
@@ -455,11 +481,11 @@ window.onload = () => {
     }
 
     elapsedLoop++;
-    //ctx.fillRect(attackPositionX, attackPositionY + 20, 125, 100);
+    ctx.fillRect(attackPositionX, attackPositionY + 20, 125, 100);
 
     //---- Check Enemy&Player collision
     for (i = 0; i < enemiesArray.length; i++) {
-      //ctx.fillRect(520, 175, 32, 32);
+      ctx.fillRect(520, 175, 32, 32);
 
       let rectEnemy = {
         x: enemiesArray[i].x,
@@ -467,7 +493,7 @@ window.onload = () => {
         width: 32,
         height: 32,
       };
-      //ctx.fillRect(rectEnemy.x, rectEnemy.y, rectEnemy.width, rectEnemy.height);
+      ctx.fillRect(rectEnemy.x, rectEnemy.y, rectEnemy.width, rectEnemy.height);
       let rectPlayer = {
         x: 520,
         y: 175,
@@ -734,10 +760,9 @@ window.onload = () => {
 
   //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
-  // boundariesArray.forEach((boundary) => {
-  //
-  //   boundary.draw(ctx);
-  // });
+  boundariesArray.forEach((boundary) => {
+    boundary.draw(ctx);
+  });
 
   //----------------- UNCOMMENT TO DRAW COLLISION WALLS  --------------
 
