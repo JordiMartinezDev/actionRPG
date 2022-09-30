@@ -1,6 +1,7 @@
 // ----------------------- GLOBAL CONST -------------------
 const offsetXpos = -900;
 const offsetYpos = -2100;
+const winConditionPoints = 200;
 const aspectRatioGlobal = 30; // Aspect ratio modified origianl
 let speed = 5;
 let blinkSpeed = 5;
@@ -15,7 +16,7 @@ let animate = null;
 let SpawnEnemiesIntervalID = null;
 let enemySpeed = 1;
 let hpPoints = 100;
-let enemyQuantity = 20;
+let enemyQuantity = 40;
 
 let moving = true;
 
@@ -397,27 +398,78 @@ window.onload = () => {
   let attackFrame = 0;
 
   ctx.fillStyle = "rgba(255,50,0,0.5)";
+  toggleScreen("gameover-screen", false);
+  toggleScreen("youwin-screen", false);
 
   document.getElementById("startButton").addEventListener("click", (event) => {
     console.log("Start");
     toggleScreen("start-screen", false);
+    toggleScreen("gameover-screen", false);
+    toggleScreen("youwin-screen", false);
     toggleScreen("mainCanvas", true);
+
     startPlaying = true;
     clearInterval(SpawnEnemiesIntervalID);
     SpawnEnemiesIntervalID = setInterval(() => {
       for (i = 0; i < enemyQuantity; i++) {
-        let randX = Math.floor(Math.random() * 2000) - 2000;
-        let randY = Math.floor(Math.random() * 2000) - 2000;
+        let randX = Math.floor(Math.random() * 4000) - 2000;
+        let randY = Math.floor(Math.random() * 4000) - 2000;
         enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
         enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
       }
       enemyQuantity * 2;
-    }, 5000);
+    }, 3000);
     background.x = offsetXpos;
     background.y = offsetYpos;
     animationLoop();
   });
 
+  document
+    .getElementById("gameOverButton")
+    .addEventListener("click", (event) => {
+      console.log("Start");
+      toggleScreen("start-screen", false);
+      toggleScreen("gameover-screen", false);
+      toggleScreen("youwin-screen", false);
+      toggleScreen("mainCanvas", true);
+
+      startPlaying = true;
+      clearInterval(SpawnEnemiesIntervalID);
+      SpawnEnemiesIntervalID = setInterval(() => {
+        for (i = 0; i < enemyQuantity; i++) {
+          let randX = Math.floor(Math.random() * 4000) - 2000;
+          let randY = Math.floor(Math.random() * 4000) - 2000;
+          enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
+          enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
+        }
+        enemyQuantity * 2;
+      }, 3000);
+      background.x = offsetXpos;
+      background.y = offsetYpos;
+      animationLoop();
+    });
+  document.getElementById("youWinButton").addEventListener("click", (event) => {
+    console.log("Start");
+    toggleScreen("start-screen", false);
+    toggleScreen("gameover-screen", false);
+    toggleScreen("youwin-screen", false);
+    toggleScreen("mainCanvas", true);
+
+    startPlaying = true;
+    clearInterval(SpawnEnemiesIntervalID);
+    SpawnEnemiesIntervalID = setInterval(() => {
+      for (i = 0; i < enemyQuantity; i++) {
+        let randX = Math.floor(Math.random() * 4000) - 2000;
+        let randY = Math.floor(Math.random() * 4000) - 2000;
+        enemiesArray.push(new Enemy(randX, randY, enemyImage, 6));
+        enemiesArray.push(new Enemy(randY, randX, enemySlimeImage, 4));
+      }
+      enemyQuantity * 2;
+    }, 3000);
+    background.x = offsetXpos;
+    background.y = offsetYpos;
+    animationLoop();
+  });
   function toggleScreen(id, toggle) {
     let element = document.getElementById(id);
     let display = toggle ? "block" : "none";
@@ -431,7 +483,7 @@ window.onload = () => {
     //window.requestAnimationFrame(gameOverScreen);
     window.cancelAnimationFrame(animate);
     toggleScreen("mainCanvas", false);
-    toggleScreen("start-screen", true);
+    toggleScreen("gameover-screen", true);
 
     resetGame(animate);
   }
@@ -447,18 +499,18 @@ window.onload = () => {
     startPlaying = false;
     console.log("you win!!");
     toggleScreen("mainCanvas", false);
-    toggleScreen("start-screen", true);
+    toggleScreen("youwin-screen", true);
     resetGame(animate);
   }
   function showPointsAndLive(ctx) {
     ctx.fillStyle = "white";
     ctx.font = "30px Arial";
-    ctx.fillText(points + " Points", 800, 50);
-    ctx.fillText(hpPoints + " HP", 30, 50);
+    ctx.fillText(points + " Points", 870, 550);
+    ctx.fillText(hpPoints + " HP", 30, 550);
   }
   function animationLoop() {
     if (startPlaying == false) return;
-    if (points > 100) {
+    if (points > winConditionPoints) {
       gameCompleted(animate);
       return;
     }
